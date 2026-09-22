@@ -47,7 +47,7 @@ services:
     envVars:
       # The one hop that leaves the container: Prometheus scrapes the backend
       # over https on :443, because free services can't be reached privately.
-      - key: BACKEND_HOST
+      - key: BACKEND_HOST = foodme-artashesmkrtchyan.onrender.com
         sync: false
       - key: GF_SECURITY_ADMIN_USER
         value: admin
