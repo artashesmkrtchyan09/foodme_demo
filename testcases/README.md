@@ -39,4 +39,4 @@ Each file has a header table with the app, area, priority, **Depends on** (the o
 - Suggested structure: one root suite per app (`Web`, `Admin`, `Backend`), and one sub-suite per AC (e.g. `Web › AC-WEB-05 Checkout`).
 - Use one case per numbered scenario, titled `AC-WEB-05.3 — Delivery shows required address fields`. The Given goes into preconditions, the When into steps, and the Then into the expected result.
 - Mark cases already covered by the tests listed in the header as *automated*, and link them with the `qase-sync` skill.
-- The ACs describe **intended** behaviour. Where the current app behaves differently, the test case should fail and a bug should be reported (see `.agents/rules/bug-report-format.md`).
+- The ACs describe **intended** behaviour. Where the current app behaves differently, the test case should fail and a bug should be reported (see the `bug-report` skill and its `.agents/skills/bug-report/template.md`).

@@ -5,7 +5,7 @@ description: Write a complete, reproducible bug report for FoodMe (backend, web 
 
 # Write a FoodMe bug report
 
-The required format — sections, severity/priority definitions and FoodMe specifics — is defined in `.agents/rules/bug-report-format.md` (also visible as `.claude/rules/bug-report-format.md`). Read it first and follow its template exactly; this skill is the workflow for filling it in with verified facts.
+The required format — sections, severity/priority definitions and FoodMe specifics — is defined in [`template.md`](template.md) in this skill's folder. Read it first and follow its template exactly; this skill is the workflow for filling it in with verified facts.
 
 ## 1. Gather what is already known
 
