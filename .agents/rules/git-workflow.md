@@ -16,6 +16,16 @@ The default branch is **`main`** (the "master" branch). Render redeploys the app
   ```
 - If you notice you committed on `main` by mistake and haven't pushed yet, move the work to a branch: `git switch -c <branch>`, then `git switch main` and `git reset --hard origin/main`. Check `git log` first to make sure the commits are on the new branch.
 
+## Coding agents: branch, change, then stop
+
+Coding agents (Claude Code and others) follow this flow for every change:
+
+1. **Before the first edit,** update `main` and create a new branch named by the rules below. Use a new branch for each new change, even if an earlier branch is still open in a PR. If the change builds on unmerged work, say so and ask whether to branch from that work or from `main`.
+2. **Make the changes** on that branch and verify them (lint, build or tests as appropriate).
+3. **Stop and report:** the branch name, the files changed, how they were verified, and anything left open. Leave the changes uncommitted.
+4. **Do not commit, push, open a PR or merge on your own.** Do these only when the user explicitly asks, for example "commit", "push", "open a PR" or `/ship-pr`. Use the `ship-pr` skill, or the exact command the user gives. Being asked to make a change is not permission to ship it.
+5. Merging is always done by the user (see *Pull requests*).
+
 ## Branches
 
 - One branch per task: one bug fix, one test suite change, one ticket. Don't mix unrelated work.
@@ -39,7 +49,7 @@ The default branch is **`main`** (the "master" branch). Render redeploys the app
 - **Small and focused:** one logical change per commit. A reviewer should be able to read it and understand it alone. Test changes and the fix they cover can share a commit. Unrelated cleanup and formatting go in their own commit.
 - **Each commit should build and pass lint.** Don't commit half-finished work that breaks the build. Use `git stash` or a WIP commit on your own branch and squash it before the PR.
 - **Review before committing.** Run `git status` and `git diff --staged`. Stage files on purpose (`git add <path>` or `git add -p`) rather than `git add .`, so stray files don't slip in.
-- **Commit often, push regularly** so work isn't lost and CI runs early.
+- **Commit often, push regularly** so work isn't lost and CI runs early. This applies to people. Coding agents commit and push only when asked (see *Coding agents* above).
 
 ## Commit messages
 
