@@ -1,3 +1,9 @@
+---
+paths:
+  - "e2e/**"
+  - "apps/admin/e2e/**"
+---
+
 # E2E tests: locators and waits (admin)
 
 Applies to every Playwright spec and helper in `apps/admin/e2e/` — new tests and any test you change.
