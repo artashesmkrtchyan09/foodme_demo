@@ -60,6 +60,7 @@ Current skills:
 - `ship-pr`: commit, push and open a ready-to-merge PR for changes already on a branch. Only when the user asks.
 - `bug-report`: write a reproducible bug report.
 - `qase-sync`: reconcile Qase test cases with the repo's tests.
+- `jira`: search, create, update and link issues in the SCRUM Jira project.
 - `fix-npm-deps` (web, admin): repair dependency installs.
 
 `.claude` (and each `apps/<app>/.claude`) is a symlink to the matching `.agents` folder, and each `CLAUDE.md` is a symlink to `AGENTS.md`, so the same files serve Claude Code and other agents.
