@@ -2,7 +2,7 @@
 
 Customer storefront: React 19 + TypeScript + Vite 8 + Tailwind 4. See the repo-root `AGENTS.md` for the overall architecture, the seeded `FM-BUG` / `FM-FLAKE` markers, and how this SPA is bundled into the backend at `/`.
 
-**Adding a feature?** Follow `.agents/rules/web-feature-development.md`. It covers how a page is wired and gives a step-by-step checklist, building on the structure below without repeating it. E2E specs follow `.agents/rules/e2e-locators-and-waits.md`.
+**Adding a feature?** Follow `.agents/rules/web-feature-development.md`. It covers how a page is wired and gives a step-by-step checklist, building on the structure below without repeating it. E2E specs follow `.agents/rules/e2e-tests.md` (structure, data, stability) and `.agents/rules/e2e-locators-and-waits.md`. Both load when a file in `e2e/` is opened.
 
 ## Commands
 
