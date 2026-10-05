@@ -60,8 +60,7 @@ Things `AGENTS.md` doesn't cover:
    - In custom fields, use `useRecordContext()` and return `null` until the record has loaded.
 8. **Config.** New `VITE_*` variables are baked into the bundle at build time, so never put secrets in them. Build redirect URLs from `import.meta.env.BASE_URL` so they work under `/backoffice/`.
 9. **Tests.**
-   - Extend `e2e/admin-flows.spec.ts`, or add a spec for a large feature, following `e2e-locators-and-waits.md`.
-   - Create the data a test needs through the public API (`createOrderViaApi`).
+   - Extend `e2e/admin-flows.spec.ts`, or add a spec for a large feature, following `e2e-tests.md` (structure, data, stability) and `e2e-locators-and-waits.md`. Both load when you open a file in `e2e/`.
    - Run `npm run lint`, `npm run build` and `npm run test:e2e` against a running backend.
 
 ## Don't

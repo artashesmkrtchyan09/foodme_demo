@@ -52,7 +52,9 @@ Each fact is written in one place. Link to it rather than copying it.
 Current rules:
 - `.agents/rules/git-workflow.md`: branches, commits, PRs and what never goes into git.
 - `apps/<app>/.agents/rules/<app>-feature-development.md`: the architecture and a checklist for adding a feature to that app.
-- `apps/{web,admin}/.agents/rules/e2e-locators-and-waits.md`: Playwright locators and waits.
+- `apps/backend/.agents/rules/backend-tests.md`: JUnit/MockMvc test structure, data isolation and assertions (loads for `src/test/**`).
+- `apps/{web,admin}/.agents/rules/e2e-tests.md`: Playwright spec structure, test data and stability (loads for `e2e/**`).
+- `apps/{web,admin}/.agents/rules/e2e-locators-and-waits.md`: Playwright locators and waits (loads for `e2e/**`).
 
 Current skills:
 - `ship-pr`: branch to ready-to-merge PR.

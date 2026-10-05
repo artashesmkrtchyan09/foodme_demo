@@ -2,7 +2,7 @@
 
 Back-office app built with react-admin 5 + MUI 6, plain JavaScript/JSX, React 18, and Vite 6. See the repo-root `AGENTS.md` for the overall architecture, the seeded `FM-BUG` / `FM-FLAKE` markers, and how this SPA is bundled into the backend at `/backoffice`.
 
-**Adding a feature?** Follow `.agents/rules/admin-feature-development.md`. It covers `dataProvider` limits, adding a resource and a step-by-step checklist, building on the structure below without repeating it. E2E specs follow `.agents/rules/e2e-locators-and-waits.md`.
+**Adding a feature?** Follow `.agents/rules/admin-feature-development.md`. It covers `dataProvider` limits, adding a resource and a step-by-step checklist, building on the structure below without repeating it. E2E specs follow `.agents/rules/e2e-tests.md` (structure, data, stability) and `.agents/rules/e2e-locators-and-waits.md`. Both load when a file in `e2e/` is opened.
 
 ## Commands
 

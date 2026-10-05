@@ -39,6 +39,8 @@ Swagger UI is at `/swagger-ui.html` and the OpenAPI spec is at `/v3/api-docs`.
 
 ## Tests
 
+How to write and structure tests (data isolation, auth helpers, assertions, seeded bugs) is in `.agents/rules/backend-tests.md`, which loads when a file in `src/test` is opened. This section covers only the test setup.
+
 - Tests in `src/test/java/am/foodme/backend` are `@SpringBootTest` + `@AutoConfigureMockMvc` + `@ActiveProfiles("test")`.
 - The `test` profile (`application-test.properties`) uses in-memory H2 in Postgres mode, disables Flyway, builds the schema with Hibernate `create-drop`, and loads data from `src/test/resources/data.sql`. Test assertions depend on that seed data. If you add a column, also update `data.sql` where tests need the values.
 - The `test` profile also turns off simulated latency, the image seeder, HTTP logging, and `FlakyHeartbeatJob` (`@Profile("!test")`).

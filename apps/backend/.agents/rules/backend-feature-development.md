@@ -69,7 +69,7 @@ Work from the bottom up and keep each layer thin.
 9. **Config.**
    - Read new settings from `application.properties` as `${ENV_VAR:default}`, and add the variable to `render.yaml` if production needs it.
    - Disable background, latency or external behaviour in `application-test.properties`.
-10. **Tests** (see below), then `./gradlew build`.
+10. **Tests.** Add a MockMvc test class for the feature, following `backend-tests.md` (it loads when you open `src/test`). Then run the full build.
 11. **Frontends.** Update the web `foodmeApi` and `src/types`, or the admin `dataProvider` / `api/*-api.js`. Renaming or reshaping a response field breaks them silently, because nothing checks the contract at compile time.
 
 ## Shared with the frontends
@@ -79,16 +79,6 @@ These are duplicated across apps, so change them together:
 - **Order status flow:** `NEW → ACCEPTED | REJECTED`, then `ACCEPTED → DELIVERED | REJECTED`. It lives in `AdminOrderService.ALLOWED_TRANSITIONS`, `apps/admin/src/constants/OrderStatus.jsx` and the web status maps (`STATUS_LABEL` in `pages/Orders`, the map in `pages/Tracking`).
 - **`ErrorResponseDto.message`:** the web `ApiRequestError` and the admin notifications show it as-is.
 - **Response shapes and `hy`/`am` language codes:** see *List responses* and *Translations*.
-
-## Tests
-
-On top of the setup described in *Tests* in `AGENTS.md`:
-
-- Add one MockMvc test class per feature (`<Feature>ControllerTest`, following `ChefControllerTest`), with `jsonPath` assertions on the real response shape.
-- Cover the happy path, validation (400 with `message`), not found (404), and for protected endpoints auth (401 without a token, 403 with the wrong role).
-- When you add rows to `data.sql`, don't change existing rows other tests count on (for example, "2 active chefs").
-- H2 isn't Postgres. Native SQL or Postgres-only functions can behave differently, so prefer JPQL or derived queries.
-- Make tests independent of order and time. `FM-FLAKE-02/03/04` show what to avoid: shared mutable state, timing assumptions and ordering assumptions.
 
 ## Don't
 

@@ -1,3 +1,9 @@
+---
+paths:
+  - "e2e/**"
+  - "apps/web/e2e/**"
+---
+
 # E2E tests: locators and waits (web)
 
 Applies to every Playwright spec and helper in `apps/web/e2e/` — new tests and any test you change.
@@ -17,7 +23,7 @@ Rules:
 - Scope instead of indexing: `page.getByRole("form", { name: "Checkout" }).getByLabel("Email")` or `cartPanel.getByRole("link", { name: "Go to checkout" })`. Avoid `.nth()` / `.first()` unless the order itself is what's being tested.
 - Never use XPath, generated class names, DOM structure (`div > div:nth-child(2)`) or Tailwind utility classes.
 - Use exact names (`{ name: "Add to cart", exact: true }`) or regexes when text could match more than one element.
-- Text comes from `src/locales/en/translation.json` — copy it from there rather than retyping it.
+- Copy visible text from the component source rather than retyping it. Most copy is written inline in the components; only a few shared labels come from `src/locales/en/translation.json`.
 - **Legacy class locators:** many existing specs use the prefixed class names (`a.cc_card`, `button.dc_card`, `aside.uc-panel`, `.cic_root`). Don't add new ones. When you edit a test that uses them, switch to a role/label/test-id locator if it's straightforward. Keep the class names in the markup either way, because other specs still depend on them.
 - If an element has no accessible name, fix the component (e.g. `aria-label` on an icon button) rather than falling back to CSS.
 

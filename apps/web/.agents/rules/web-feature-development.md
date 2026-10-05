@@ -62,7 +62,7 @@ foodmeApi (api/foodme.ts) → apiClient (api/client.ts) → fetch(API_BASE_URL +
 10. **Text.** Most copy is written inline in English. `translation.json` holds only a few shared `generic.*` labels. Follow what the surrounding component does, and don't half-migrate a page to i18n.
 11. **Config.** New `VITE_*` variables are baked into the bundle at build time, so never put secrets in them.
 12. **Tests.**
-   - Add or extend a spec in `e2e/` following `e2e-locators-and-waits.md`. Use `e2e/auth.ts` for customers.
+   - Add or extend a spec in `e2e/`, following `e2e-tests.md` (structure, data, stability) and `e2e-locators-and-waits.md`. Both load when you open a file in `e2e/`.
    - Run `npm run lint`, `npm run build` and `npm run test:e2e` against a running backend.
 
 ## Shared with the backend and admin
