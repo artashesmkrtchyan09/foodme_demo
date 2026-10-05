@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to coding agents working with code in this repository. Each app has its own `AGENTS.md` with commands, structure and conventions: `apps/backend`, `apps/web`, `apps/admin`.
+This file provides guidance to coding agents working with code in this repository. Each app has its own `AGENTS.md` with commands, structure and conventions: `apps/backend`, `apps/web`, `apps/admin`. Rules and skills are listed in *Where agent guidance lives* at the end.
 
 ## What this repo is
 
@@ -37,3 +37,27 @@ CI (`.github/workflows/ci.yml`) runs backend build, web/admin lint + build, Dock
 **API base URL.** Both frontends default to relative URLs in production and `http://localhost:8081` in dev; `VITE_API_BASE_URL` overrides. `VITE_SENTRY_DSN` is baked in at build time (Render passes `VITE_SENTRY_DSN_WEB` / `VITE_SENTRY_DSN_ADMIN` as build args).
 
 **Free-tier constraints.** Render's instance is 512 MB / 0.1 CPU; the backend's JVM flags, Tomcat thread cap and Flyway retries exist for that (see `apps/backend/AGENTS.md`).
+
+## Where agent guidance lives
+
+Each fact is written in one place. Link to it rather than copying it.
+
+| Layer | Holds | Location |
+|---|---|---|
+| This file | What the repo is, seeded bugs and flakes, demo-only behaviour, layout, deployment architecture | `AGENTS.md` |
+| App `AGENTS.md` | Commands, structure and conventions of one app | `apps/<app>/AGENTS.md` |
+| Rules | Standing instructions loaded automatically (app rules when working in that app) | `.agents/rules/` (repo-wide), `apps/<app>/.agents/rules/` (per app) |
+| Skills | Step-by-step procedures, loaded only when the task matches | `.agents/skills/`, `apps/<app>/.agents/skills/` |
+
+Current rules:
+- `.agents/rules/git-workflow.md`: branches, commits, PRs and what never goes into git.
+- `apps/<app>/.agents/rules/<app>-feature-development.md`: the architecture and a checklist for adding a feature to that app.
+- `apps/{web,admin}/.agents/rules/e2e-locators-and-waits.md`: Playwright locators and waits.
+
+Current skills:
+- `ship-pr`: branch to ready-to-merge PR.
+- `bug-report`: write a reproducible bug report.
+- `qase-sync`: reconcile Qase test cases with the repo's tests.
+- `fix-npm-deps` (web, admin): repair dependency installs.
+
+`.claude` (and each `apps/<app>/.claude`) is a symlink to the matching `.agents` folder, and each `CLAUDE.md` is a symlink to `AGENTS.md`, so the same files serve Claude Code and other agents.

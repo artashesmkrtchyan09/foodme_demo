@@ -2,6 +2,8 @@
 
 Spring Boot 3.3 / Java 17 / Gradle API for FoodMe. See the repo-root `AGENTS.md` for the overall architecture, the seeded `FM-BUG` / `FM-FLAKE` markers, and deployment.
 
+**Adding a feature?** Follow `.agents/rules/backend-feature-development.md`. It covers the request flow, a step-by-step checklist and the contracts shared with the frontends, and builds on the conventions below without repeating them.
+
 ## Commands
 
 Run from `apps/backend`:
