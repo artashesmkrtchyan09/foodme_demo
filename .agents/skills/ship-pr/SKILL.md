@@ -1,11 +1,13 @@
 ---
 name: ship-pr
-description: Take local FoodMe changes all the way to a ready-to-merge GitHub pull request, following the git workflow rule. It creates a branch, commits, pushes, opens the PR, watches CI, separates new failures from ones already on main, then hands the merge to the user and syncs main afterwards. Use when asked to commit and push changes, open/create a PR, "ship" or "send" a change, or get work merged into main.
+description: Commit, push and open a ready-to-merge GitHub pull request for FoodMe changes already made on a feature branch, then watch CI, separate new failures from ones already on main, hand the merge to the user and sync main afterwards. Use ONLY when the user explicitly asks to commit, push, open/create a PR or ship/send their changes. Never use it on your own after finishing a change.
 ---
 
 # Ship a change as a pull request
 
 Branch names, commit messages, PR contents and what must never be committed are defined in [`.agents/rules/git-workflow.md`](../../rules/git-workflow.md). Read it first and follow it. This skill is the step-by-step procedure.
+
+**Run only on request.** Under the rule's *Coding agents* flow, you make changes on a branch and stop. This skill starts only when the user asks you to ship them. Do only what they asked: "commit" means steps 1–2 without pushing, "push" means up to step 2, and "open a PR" or `/ship-pr` means steps 0–5. If unsure, ask.
 
 **You never merge.** The user reviews and merges every PR themselves, because `main` auto-deploys to Render. Claude Code's auto mode also blocks `gh pr merge`. Don't try to get around that with another tool, the API or a direct push to `main`.
 
@@ -28,11 +30,11 @@ GH=$(command -v gh || echo "/c/Program Files/GitHub CLI/gh.exe")
 - Leave out anything the rule forbids (secrets, `.env*`, reports, build output). If unrelated changes are mixed in, ask which ones belong in this PR.
 - Check that no `FM-BUG-NN` / `FM-FLAKE-NN` code was changed by accident (`git diff | grep -n "FM-\(BUG\|FLAKE\)"`).
 
-## 2. Branch, commit and push
+## 2. Commit and push
+
+The changes should already be on a feature branch (`git branch --show-current`). If they're on `main`, move them to a new branch named by the rule (`git switch -c <type>/<area>-<short-description>` carries uncommitted changes along) and tell the user you did.
 
 ```sh
-git fetch origin
-git switch -c <type>/<area>-<short-description>   # from an up-to-date main
 git add <paths>                                    # explicit paths, never `git add .`
 git commit -F - <<'EOF'
 <Imperative subject, ≤72 chars, with FM tag if any>
@@ -44,8 +46,9 @@ EOF
 git push -u origin <branch>
 ```
 
-- If you're already on `main` with uncommitted changes, `git switch -c` carries them to the new branch. If commits were made on `main` by mistake, follow the recovery step in the rule.
+- If commits were made on `main` by mistake, follow the recovery step in the rule.
 - Split unrelated changes into separate commits.
+- Stop after this step if the user asked only to commit or push.
 - Run the checks that cover what you changed before pushing (see the app's `AGENTS.md`). Docs-only changes need none.
 
 ## 3. Open the PR

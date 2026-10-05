@@ -57,7 +57,7 @@ Current rules:
 - `apps/{web,admin}/.agents/rules/e2e-locators-and-waits.md`: Playwright locators and waits (loads for `e2e/**`).
 
 Current skills:
-- `ship-pr`: branch to ready-to-merge PR.
+- `ship-pr`: commit, push and open a ready-to-merge PR for changes already on a branch. Only when the user asks.
 - `bug-report`: write a reproducible bug report.
 - `qase-sync`: reconcile Qase test cases with the repo's tests.
 - `fix-npm-deps` (web, admin): repair dependency installs.
