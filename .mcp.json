@@ -1,0 +1,23 @@
+{
+    "mcpServers": {
+        "playwright": {
+            "command": "npx",
+            "args": [
+                "@playwright/mcp@latest"
+            ]
+        },
+    
+        "qase": {
+            "command": "npx",
+            "args": ["-y", "@qase/mcp-server"],
+            "env": {
+                "QASE_API_TOKEN": "${QASE_API_TOKEN}"
+            }
+        },
+        
+        "agentsecrets": {
+            "command": "agentsecrets",
+            "args": ["mcp", "serve"]
+        }
+  }
+}
