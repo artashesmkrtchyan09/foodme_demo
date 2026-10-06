@@ -7,13 +7,15 @@ description: Compare and sync test cases between the Qase test management tool a
 
 Compares every automated test in the repo with the test cases in a Qase project, lists every inconsistency, and — only after the user approves — fixes them on either side. The final output is always a detailed report.
 
-Scripts live in `.agents/skills/qase-sync/scripts/` (Node 18+, no dependencies). Run them from the repo root.
+Qase is read and written through the **Qase MCP server** (`mcp__qase__*` tools). The code side is collected by `scripts/inventory.mjs` (Node 18+, no dependencies, run from the repo root).
 
 ## 0. Prerequisites
 
-- `QASE_API_TOKEN` — a Qase API token (Qase → user settings → API tokens). `QASE_PROJECT` — the project code (e.g. `FOODME`). Optional `QASE_API_URL` for self-hosted/enterprise (default `https://api.qase.io/v1`).
-- If either is missing, stop and ask the user to set them in their shell (e.g. `! $env:QASE_API_TOKEN="..."` in PowerShell or `! export QASE_API_TOKEN=...`). Never ask them to paste the token into chat, never print it, and never write it to a tracked file.
-- If a Qase MCP server is connected, you may use it to read cases instead of `qase.mjs`, but produce the same `qase.json` shape so `compare.mjs` still works.
+- The project code is `FOODME` unless the user names another one.
+- The `qase` MCP server is configured in `.mcp.json` (`npx @qase/mcp-server`). It reads `QASE_API_TOKEN` from the environment of the shell that started Claude Code (`${QASE_API_TOKEN}`); Claude Code does not load `.env` files. The token itself is kept in AgentSecrets (OS keychain).
+- If the `mcp__qase__*` tools are missing, the server isn't enabled: ask the user to enable it (`/mcp`) and restart the session.
+- If a Qase tool fails with **401**, the token isn't reaching the server: `QASE_API_TOKEN` is unset or stale in the shell that started Claude Code. Ask the user to set it in that shell and restart the session (or reconnect with `/mcp`). If AgentSecrets reports "keychain-auth daemon is not running", ask the user to run `! agentsecrets doctor` first. Never ask for the token, never print it, never write it to a file.
+- Load tool schemas before first use. The core tools are `qase_project_context`, `qql_help`, `qql_search`, `qase_get`, `qase_case_upsert`, `qase_case_bulk_create`, `qase_suite_upsert`. Anything else (plans, milestones, shared steps…) is activated with `qase_discover_tools`.
 
 Write intermediate files to a scratch directory, not the repo: `$CLAUDE_JOB_DIR/tmp` if set, otherwise the system temp dir. Below, `$OUT` means that directory.
 
@@ -30,54 +32,62 @@ A test is linked to a Qase case by its numeric case ID. The inventory recognises
 
 ## 2. Collect both sides
 
+**Code:**
 ```
 node .agents/skills/qase-sync/scripts/inventory.mjs > "$OUT/inventory.json"
-node .agents/skills/qase-sync/scripts/qase.mjs export > "$OUT/qase.json"
-node .agents/skills/qase-sync/scripts/compare.mjs "$OUT/inventory.json" "$OUT/qase.json" > "$OUT/findings.json"
 ```
+One entry per test: app, file, line, suite path (Java class, or spec file + `describe` titles), title (method name / `@DisplayName` / Playwright title), linked `qaseIds`, `skipped`, and any `FM-FLAKE-NN` / `FM-BUG-NN` markers in or right above the test. Sanity-check the count against a quick grep (`@Test` methods, `test(` calls); if the parser missed tests, read those files and add them by hand.
 
-- `inventory.json` — one entry per test: app, file, line, suite path (Java class, or spec file + `describe` titles), title (method name / `@DisplayName` / Playwright title), linked Qase IDs, `skipped`, and any `FM-FLAKE-NN` / `FM-BUG-NN` markers in or right above the test.
-- `qase.json` — project, suites (with full paths) and all cases with `automation` (0 not automated, 1 to be automated, 2 automated), `status` (0 actual, 1 draft, 2 deprecated) and `isFlaky`. If the numbers look wrong for this workspace, check them with `node qase.mjs GET /system_field`.
-- Sanity-check the inventory count against a quick grep (`@Test` methods, `test(` calls) before trusting it; if the parser missed tests, read those files and add them by hand.
+**Qase:**
+1. `qase_project_context` with `code: "FOODME"` — the suite tree. Check `coverage`; pass `full: true` if suites are truncated. Suite **descriptions** matter: the AC sub-suites (e.g. `Web › AC-WEB-05 …`) list the repo's **existing automated tests** that cover that AC — the best hint for which test belongs to which case.
+2. Read `qql_help` (`entities`, `enumValues`) once, then page through every case with `qql_search`, 100 per page (`offset` 0, 100, …) until a page returns fewer than 100:
+   ```
+   entity = "case" and project = "FOODME"
+   ```
+   Keep per case: id, title, suite, automation, status, isFlaky, tags.
+3. Use QQL for counts instead of paging when you only need numbers, e.g. `entity = "case" and project = "FOODME" and automation = "Automated"`, or the aggregation syntax (`qql_help` → `aggregation`).
+4. `qase_get` (`entity: "case"`) only for the few cases you review in detail (steps, expected results).
 
-## 3. Interpret the findings
+Enum values in QQL: automation `Manual` / `To be automated` / `Automated`; status `Actual` / `Draft` / `Deprecated`; priority has no `Critical` (that is a severity).
 
-`compare.mjs` emits a `summary` and a list of `findings`. Review each one — it is a heuristic, not a verdict.
+## 3. Find the inconsistencies
 
-| Type | Meaning | Usual fix |
-|---|---|---|
-| `UNLINKED_TEST` | Test has no Qase ID. `candidates` are Qase cases with similar titles. | Link to the right candidate, or create a new Qase case. |
-| `AUTOMATED_CASE_WITHOUT_TEST` | Qase says *automated*, but no test links to it. `candidates` are unlinked tests with similar titles. | Link the matching test, or set the case to *to be automated* / *not automated*. |
-| `LINK_TO_MISSING_CASE` | Code references a Qase ID that doesn't exist (deleted, wrong project, typo). | Fix or remove the marker. |
-| `DUPLICATE_LINK` | Several tests link to the same case. | Fine if intentional (e.g. API + E2E cover one case); otherwise split the case. |
-| `AUTOMATION_STATUS_MISMATCH` | Linked test exists but the case isn't marked *automated*. | Set `automation: 2` in Qase. |
-| `FLAKY_MISMATCH` | `FM-FLAKE` marker in code vs `is_flaky` in Qase disagree. | Usually update Qase `is_flaky`. |
-| `SKIPPED_IN_CODE` | Linked test is `skip`/`fixme`/`@Disabled`. | Report; Qase may need a note or status change. |
-| `LINKED_CASE_DEPRECATED` / `LINKED_CASE_DRAFT` | Code still runs a test for a deprecated/draft case. | Re-activate the case or drop the link/test. |
-| `TITLE_MISMATCH` | Linked titles differ after normalisation (camelCase/underscores are ignored). | Usually cosmetic; align only if meaning differs. |
-| `SUITE_MISMATCH` | Case isn't under a suite named like its app (Backend/API, Web/Storefront, Admin/Back office). | Move case or confirm the structure. |
-| `TO_BE_AUTOMATED` | Qase backlog with no test yet. | Informational. |
+Compare the inventory with the Qase cases and classify every difference:
 
-Use judgement on top of the script:
-- Pair `UNLINKED_TEST` and `AUTOMATED_CASE_WITHOUT_TEST` findings that point at each other — they are one inconsistency (a missing link), not two.
-- For likely matches, open the test and the Qase case (`node qase.mjs GET /case/$QASE_PROJECT/<id>`) and compare steps/expected results with what the test actually asserts. Note real behavioural drift (the test checks something the case doesn't describe, or vice versa).
+| Type | Severity | Meaning | Usual fix |
+|---|---|---|---|
+| `UNLINKED_TEST` | high | Test has no Qase ID. Name up to 3 candidate cases (similar title, or listed in the AC sub-suite's "Existing automated tests"). | Link to the right candidate, or create a new Qase case. |
+| `AUTOMATED_CASE_WITHOUT_TEST` | high | Qase says *Automated*, but no test links to it. | Link the matching test, or set the case to *To be automated* / *Manual*. |
+| `LINK_TO_MISSING_CASE` | high | Code references a Qase ID that doesn't exist (deleted, wrong project, typo). | Fix or remove the marker. |
+| `DUPLICATE_LINK` | medium | Several tests link to the same case. | Fine if intentional (e.g. API + E2E cover one case); otherwise split the case. |
+| `AUTOMATION_STATUS_MISMATCH` | medium | Linked test exists but the case isn't *Automated*. | Set `automation: "2"` in Qase. |
+| `FLAKY_MISMATCH` | medium | `FM-FLAKE` marker in code vs `isFlaky` in Qase disagree. | Usually update Qase `is_flaky`. |
+| `SKIPPED_IN_CODE` | medium | Linked test is `skip`/`fixme`/`@Disabled`. | Report; Qase may need a note or status change. |
+| `LINKED_CASE_DEPRECATED` / `LINKED_CASE_DRAFT` | medium / low | Code still runs a test for a deprecated/draft case. | Re-activate the case or drop the link/test. |
+| `TITLE_MISMATCH` | low | Linked titles differ in meaning (ignore camelCase/underscore/punctuation differences). | Usually cosmetic; align only if meaning differs. |
+| `SUITE_MISMATCH` | low | Case isn't under the suite for its app (`Backend`, `Web`, `Admin`). | Move case or confirm the structure. |
+| `TO_BE_AUTOMATED` | info | *To be automated* case with no test yet. | Informational. |
+
+Manual cases with no linked test (e.g. the AC scenarios nobody has automated) are not inconsistencies; count them in the summary only.
+
+How to judge:
+- Match on meaning, not wording: `createOrder_cashPayment_succeeds` and "Order total is calculated correctly" can be the same check. One test may cover several AC scenarios (link all of them), and one scenario may be covered by an API test and an E2E test.
+- An `UNLINKED_TEST` and an `AUTOMATED_CASE_WITHOUT_TEST` that point at each other are one inconsistency (a missing link), not two.
+- For likely matches, open the test and the case (`qase_get`) and compare its steps/expected results with what the test actually asserts. Note real behavioural drift (the test checks something the case doesn't describe, or vice versa).
 - **Seeded issues are intentional.** `FM-FLAKE-NN` tests are flaky on purpose and `FM-BUG-NN` code is a deliberate bug (see the root `AGENTS.md`). Never "fix" the code to make it match Qase; a Qase case may legitimately describe the correct behaviour that an `FM-BUG` breaks — report it as "expected failure due to FM-BUG-NN", not as drift. An `FM-FLAKE` marker whose comment says `FIX` should still be reported, with that note.
 
 ## 4. Sync (only with approval)
 
 Present the report (section 5) first and propose concrete actions grouped by side. Ask the user which to apply — Qase writes are visible to their whole team. Then:
 
-**In code** — add/fix `// qase: <id>` markers directly above the test (keep existing comments and `FM-*` markers intact; don't touch test logic).
+**In code** — add/fix `// qase: <id>` markers directly above the test (keep existing comments and `FM-*` markers intact; don't touch test logic). This is a repo change: follow `.agents/rules/git-workflow.md` (new branch, then stop).
 
-**In Qase** — write a JSON body to `$OUT` and send it:
-```
-node .agents/skills/qase-sync/scripts/qase.mjs PATCH /case/$QASE_PROJECT/<id> "$OUT/body.json"   # e.g. {"automation": 2, "is_flaky": 1}
-node .agents/skills/qase-sync/scripts/qase.mjs POST  /case/$QASE_PROJECT "$OUT/body.json"         # new case
-node .agents/skills/qase-sync/scripts/qase.mjs POST  /suite/$QASE_PROJECT "$OUT/body.json"        # {"title": "Web", "parent_id": null}
-```
-For a new case, derive `title` from the test (human-readable, not camelCase), set `suite_id` to the app's suite (create `Backend` / `Web` / `Admin` suites, and a sub-suite per test class or spec file, if missing), `automation: 2`, `is_flaky: 1` when the test has an `FM-FLAKE` marker, `tags: ["<app>", "automated"]`, and `steps` (`[{ "action": "...", "expected_result": "..." }]`) summarising what the test does. Then add the returned `id` as a `// qase:` marker on the test.
+**In Qase:**
+- Update a case: `qase_case_upsert` with `code`, `id`, `title` (required — pass the current title) and only the fields that change, e.g. `automation: "2"`, `is_flaky: "1"`.
+- New cases: `qase_case_bulk_create` (up to 100 per call; never loop `qase_case_upsert` for creates). Derive `title` from the test (human-readable, not camelCase), set `suite_id` to the app's suite, `automation: "2"`, `is_flaky: "1"` when the test has an `FM-FLAKE` marker, `tags: ["<app>", "automated"]`, and `steps` (`[{ "action": "...", "expected_result": "..." }]`) summarising what the test does. Then add the returned IDs as `// qase:` markers.
+- Missing suites: `qase_suite_upsert` (`Backend` / `Web` / `Admin` root suites, and a sub-suite per test class or spec file if needed). Read the tree from `qase_project_context` first and create parents before children.
 
-Never delete Qase cases or suites (the client doesn't support DELETE on purpose) and never delete tests; suggest deprecation instead. After applying, re-run section 2 and confirm the fixed findings are gone.
+Never delete Qase cases or suites and never delete tests; suggest deprecation instead. After applying, repeat section 2 (`qase_project_context` is cached for 5 minutes — rely on `qql_search` to see fresh case data) and confirm the fixed findings are gone.
 
 ## 5. Report
 
@@ -94,7 +104,7 @@ Always finish with this report (in the chat; if the user wants to share it, offe
 
 ## High
 ### Tests missing from Qase (<n>)
-| App | Test (file:line) | Best Qase candidate (score) | Proposed action |
+| App | Test (file:line) | Best Qase candidate | Proposed action |
 ### Qase "automated" cases with no test (<n>)
 | Case | Suite | Likely test | Proposed action |
 ### Broken links (<n>)
@@ -114,7 +124,7 @@ Cases whose steps or expected results don't match what the linked test asserts (
 FM-BUG / FM-FLAKE related items and why they're intentional.
 
 ## Proposed sync plan
-Numbered list: code changes, Qase changes (PATCH/POST), and open questions for the user.
+Numbered list: code changes, Qase changes (tool + case IDs + fields), and open questions for the user.
 If changes were applied: what was changed, and the before/after finding counts.
 ```
 
