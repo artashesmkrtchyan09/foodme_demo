@@ -1,0 +1,13 @@
+{
+  "enabledMcpjsonServers": [
+    "playwright",
+    "qase",
+    "agentsecrets"
+  ],
+  "permissions": {
+    "allow": [
+      "mcp__agentsecrets__list_keys",
+      "mcp__agentsecrets__api_call"
+    ]
+  }
+}
