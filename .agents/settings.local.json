@@ -1,7 +1,0 @@
-{
-  "enabledMcpjsonServers": [
-    "playwright",
-    "qase",
-    "agentsecrets"
-  ]
-}

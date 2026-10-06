@@ -36,6 +36,9 @@ blob-report/
 !.env.example
 !.mcp.json.example
 
+# --- Agent personal settings (shared ones live in settings.json) ----------
+settings.local.json
+
 # --- IDE ------------------------------------------------------------------
 .idea/
 .vscode/
