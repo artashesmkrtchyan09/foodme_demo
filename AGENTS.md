@@ -64,6 +64,8 @@ Current skills:
 - `qase-sync`: reconcile Qase test cases with the repo's tests.
 - `web-regression` (web): run the Qase Web test cases in Chrome through the Playwright MCP server and report a comparable result.
 - `jira`: search, create, update and link issues in the SCRUM Jira project.
+- `backend-dev` (backend): implement a backend change bottom up, build it, run it against Postgres and check it through the API.
+- `backend-test` (backend): write, run and debug JUnit/MockMvc tests, including telling seeded flakes and bugs from real failures.
 - `fix-npm-deps` (web, admin): repair dependency installs.
 
 Current agents:
