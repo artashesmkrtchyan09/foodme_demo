@@ -7,7 +7,12 @@
   "permissions": {
     "allow": [
       "mcp__agentsecrets__list_keys",
-      "mcp__agentsecrets__api_call"
+      "mcp__agentsecrets__api_call",
+      "mcp__playwright",
+      "mcp__qase__qase_project_context",
+      "mcp__qase__qql_help",
+      "mcp__qase__qql_search",
+      "mcp__qase__qase_get"
     ]
   }
 }

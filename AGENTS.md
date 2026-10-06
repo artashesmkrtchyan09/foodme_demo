@@ -48,6 +48,8 @@ Each fact is written in one place. Link to it rather than copying it.
 | App `AGENTS.md` | Commands, structure and conventions of one app | `apps/<app>/AGENTS.md` |
 | Rules | Standing instructions loaded automatically (app rules when working in that app) | `.agents/rules/` (repo-wide), `apps/<app>/.agents/rules/` (per app) |
 | Skills | Step-by-step procedures, loaded only when the task matches | `.agents/skills/`, `apps/<app>/.agents/skills/` |
+| Agents | Subagents that run one job in their own context | `.agents/agents/` |
+| Commands | Slash commands that run a longer workflow | `.agents/commands/` |
 
 Current rules:
 - `.agents/rules/git-workflow.md`: branches, commits, PRs and what never goes into git.
@@ -60,7 +62,14 @@ Current skills:
 - `ship-pr`: commit, push and open a ready-to-merge PR for changes already on a branch. Only when the user asks.
 - `bug-report`: write a reproducible bug report.
 - `qase-sync`: reconcile Qase test cases with the repo's tests.
+- `web-regression` (web): run the Qase Web test cases in Chrome through the Playwright MCP server and report a comparable result.
 - `jira`: search, create, update and link issues in the SCRUM Jira project.
 - `fix-npm-deps` (web, admin): repair dependency installs.
+
+Current agents:
+- `web-regression-runner`: runs one `web-regression` run in a fresh context and returns its report. It never edits files.
+
+Current commands:
+- `/web-regression-goal [runs] [base-url]`: runs `web-regression` 10 times (by default), compares the results and improves the skill (`SKILL.md`, `case-notes.md`, `improvement-log.md`) until runs agree.
 
 `.claude` (and each `apps/<app>/.claude`) is a symlink to the matching `.agents` folder, and each `CLAUDE.md` is a symlink to `AGENTS.md`, so the same files serve Claude Code and other agents.
