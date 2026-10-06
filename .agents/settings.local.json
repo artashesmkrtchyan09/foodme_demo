@@ -1,0 +1,7 @@
+{
+  "enabledMcpjsonServers": [
+    "playwright",
+    "qase",
+    "agentsecrets"
+  ]
+}
