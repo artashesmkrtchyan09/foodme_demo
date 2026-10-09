@@ -31,5 +31,5 @@ jobs:
           prompt: review tests for the following PR ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
             review tests by using the following skill - test-review
             after reviewing add inline comments about bad tests and PR comment about missing tests
-          claude_args: '--allowedTools "Read,Grep,Glob,Bash(git:*),Bash(rg:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),mcp__github_inline_comment__create_inline_comment)'
+          claude_args: '--allowedTools "Read,Grep,Glob,Bash(git:*),Bash(rg:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),mcp__github_inline_comment__create_inline_comment"'
           show_full_output: true
