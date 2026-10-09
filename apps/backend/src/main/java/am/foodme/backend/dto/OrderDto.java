@@ -33,6 +33,7 @@ public class OrderDto {
     private List<CreateOrderDishDto> createOrderDishes;
     private List<OrderDishDto> orderDishList;
     private LocalDateTime createdAt;
+    private OrderReviewDto review;
 
     public static OrderDto mapEntityToDto(Order entity) {
         if (entity == null) {
@@ -54,6 +55,7 @@ public class OrderDto {
         dto.setTotalPrice(entity.getTotalPrice());
         dto.setDeliveryPrice(entity.getDeliveryPrice());
         dto.setAddressDto(AddressDto.mapEntityToDto(entity.getAddress()));
+        dto.setReview(OrderReviewDto.mapEntityToDto(entity.getReview()));
         if (entity.getOrderDishList() != null) {
             dto.setOrderDishList(entity.getOrderDishList().stream()
                     .map(OrderDishDto::mapEntityToDto)

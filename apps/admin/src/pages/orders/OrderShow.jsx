@@ -23,6 +23,7 @@ import {
 import { OrderStatus, OrderStatusColors, OrderStatusTransitions } from '../../constants/OrderStatus.jsx';
 import { updateOrderStatus } from '../../api/order-api.js';
 import BackButton from '../../layout/BackButton.jsx';
+import { CustomerReviewSection } from './CustomerReview.jsx';
 
 const OrderDetails = () => {
     const record = useRecordContext();
@@ -163,6 +164,8 @@ const OrderDetails = () => {
                     <Typography variant="h6">Total</Typography>
                     <Typography variant="h6">{record.totalPrice} AMD</Typography>
                 </Stack>
+
+                <CustomerReviewSection />
 
                 {availableTransitions.length > 0 && (
                     <>
