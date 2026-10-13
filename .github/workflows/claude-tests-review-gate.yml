@@ -1,0 +1,59 @@
+name: Claude Tests Review Gate
+
+# Quality gate for "Claude Tests Review". Reads the verdict from the review's PR
+# comment and publishes it as the commit status "quality-gate/claude-tests-review".
+# Make that status required in the branch protection rules of `main` to block merges.
+on:
+  workflow_run:
+    workflows: ["Claude Tests Review"]
+    types: [completed]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+
+    steps:
+      - name: Check the Claude tests review verdict
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_STARTED: ${{ github.event.workflow_run.run_started_at }}
+          MARKER: "<!-- claude-tests-review -->"
+          CONTEXT: quality-gate/claude-tests-review
+        run: |
+          set -euo pipefail
+
+          publish() { # state, description
+            gh api "repos/$REPO/statuses/$HEAD_SHA" \
+              -f state="$1" -f context="$CONTEXT" -f description="$2" \
+              -f target_url="${COMMENT_URL:-${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}}" >/dev/null
+            echo "$CONTEXT: $1 - $2"
+            [ "$1" = success ] || exit 1
+          }
+
+          [ -n "$PR_NUMBER" ] || publish failure "No pull request linked to the review run"
+          [ "$RUN_CONCLUSION" = success ] || publish failure "Claude Tests Review run ended with: $RUN_CONCLUSION"
+
+          comment=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            | jq -s --arg m "$MARKER" 'add | map(select(.body | contains($m))) | last // empty')
+          [ -n "$comment" ] || publish failure "No Claude tests review comment found on the PR"
+
+          COMMENT_URL=$(jq -r .html_url <<<"$comment")
+          # A comment older than this review run was not updated by it (stale verdict from an earlier push).
+          [[ "$(jq -r .updated_at <<<"$comment")" > "$RUN_STARTED" ]] \
+            || publish failure "Review comment was not updated by the latest review run"
+
+          verdict=$(jq -r .body <<<"$comment" \
+            | sed -nE 's/.*Verdict:\*{0,2} *(PASS|CHANGES REQUESTED).*/\1/p' | head -n1)
+          case "$verdict" in
+            PASS) publish success "Tests review passed" ;;
+            "CHANGES REQUESTED") publish failure "Tests review requested changes - see the PR comment" ;;
+            *) publish failure "No verdict line found in the review comment" ;;
+          esac
