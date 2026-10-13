@@ -31,5 +31,7 @@ jobs:
           prompt: review tests for the following PR ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
             review tests by using the following skill - test-review
             after reviewing add inline comments about bad tests and PR comment about missing tests
+            the PR comment about missing tests must start with the line <!-- claude-tests-review --> so it can be found later
+            do not create a new PR comment if one already exists: list the PR comments (gh pr view --json comments, which gives each comment url), find the one containing <!-- claude-tests-review -->, and if found overwrite its body with the new review by running gh api -X PATCH repos/${{ github.repository }}/issues/comments/<comment id> -f body=<new comment>; the comment id is the number after issuecomment- in the url; create a new PR comment with gh pr comment only if no such comment exists
           claude_args: '--allowedTools "Read,Grep,Glob,Bash(git:*),Bash(rg:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),mcp__github_inline_comment__create_inline_comment"'
           show_full_output: true

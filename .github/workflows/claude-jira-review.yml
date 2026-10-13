@@ -38,5 +38,7 @@ jobs:
              - PR title: ${{ github.event.pull_request.title }}
              - Get Jira ticket number from the PR title, which has the following format: <SCRUM-number>
              - Jira tiket: Get jira ticket by using the following tool: mcp__mcp-atlassian__jira_get_issue
+             - The PR comment must start with the line <!-- claude-jira-review --> so it can be found later
+             - Do not create a new PR comment if one already exists: list the PR comments (gh pr view --json comments, which gives each comment url), find the one containing <!-- claude-jira-review -->, and if found overwrite its body with the new review by running gh api -X PATCH repos/${{ github.repository }}/issues/comments/<comment id> -f body=<new comment>; the comment id is the number after issuecomment- in the url. Create a new PR comment with gh pr comment only if no such comment exists
           claude_args: '--allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*), mcp__github_inline_comment__create_inline_comment, mcp__mcp-atlassian__jira_get_issue"'
           show_full_output: true
