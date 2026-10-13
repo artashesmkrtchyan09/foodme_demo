@@ -1,0 +1,81 @@
+name: Claude Mutation Testing Gate
+
+# Quality gate for "Claude Mutation Testing". Downloads the mutation reports, recomputes
+# the scores (the agent's own numbers are not trusted), updates the PR comment and
+# publishes the commit status "quality-gate/mutation-testing".
+# Make that status required in the branch protection rules of `main` to block merges.
+# Threshold: repo variable MUTATION_SCORE_THRESHOLD (default 70).
+on:
+  workflow_run:
+    workflows: ["Claude Mutation Testing"]
+    types: [completed]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+      issues: write
+      statuses: write
+
+    steps:
+      # Default branch only: the gate script is never taken from the PR.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check the mutation testing result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          THRESHOLD: ${{ vars.MUTATION_SCORE_THRESHOLD || '70' }}
+          MARKER: "<!-- claude-mutation-testing -->"
+          CONTEXT: quality-gate/mutation-testing
+        run: |
+          set -euo pipefail
+
+          publish() { # state, description
+            gh api "repos/$REPO/statuses/$HEAD_SHA" \
+              -f state="$1" -f context="$CONTEXT" -f description="${2:0:140}" \
+              -f target_url="${COMMENT_URL:-${{ github.server_url }}/$REPO/actions/runs/$RUN_ID}" >/dev/null
+            echo "$CONTEXT: $1 - $2"
+            [ "$1" = success ] || exit 1
+          }
+
+          [ -n "$PR_NUMBER" ] || publish failure "No pull request linked to the mutation testing run"
+
+          mkdir reports
+          gh run download "$RUN_ID" -R "$REPO" -D reports || true
+          [ -f reports/mutation-modules/modules.json ] \
+            || publish failure "Mutation testing run produced no module list (run ended with: $RUN_CONCLUSION)"
+
+          modules=$(jq -r 'join(",")' reports/mutation-modules/modules.json)
+          node .github/scripts/mutation-report.mjs reports "$THRESHOLD" "$modules"
+          state=$(jq -r .state reports/status.json)
+          description=$(jq -r .description reports/status.json)
+
+          # Nothing to mutate: no comment, nothing to gate.
+          if [ -z "$modules" ]; then
+            publish success "No source changes to mutate"
+            exit 0
+          fi
+
+          comment=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            | jq -s --arg m "$MARKER" 'add | map(select(.body | contains($m))) | last // empty')
+          if [ -n "$comment" ]; then
+            COMMENT_URL=$(gh api -X PATCH "repos/$REPO/issues/comments/$(jq -r .id <<<"$comment")" \
+              -F body=@reports/summary.md --jq .html_url)
+          else
+            COMMENT_URL=$(gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" \
+              -F body=@reports/summary.md --jq .html_url)
+          fi
+
+          [ "$RUN_CONCLUSION" = success ] \
+            || publish failure "Mutation testing run ended with: $RUN_CONCLUSION"
+          [ "$state" = success ] || publish failure "$description - see the PR comment"
+          publish success "$description"

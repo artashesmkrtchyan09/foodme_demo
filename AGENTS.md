@@ -62,6 +62,7 @@ Current skills:
 - `ship-pr`: commit, push and open a ready-to-merge PR for changes already on a branch. Only when the user asks.
 - `bug-report`: write a reproducible bug report.
 - `test-review`: read-only review of tests added in a diff or PR (backend, web, admin). Reports badly written tests and missing tests; built to run in CI.
+- `mutation-test`: mutation-tests the code a diff or PR adds or changes in one module (backend, web, admin) with classic and product-specific mutants, runs that module's tests per mutant, and writes `mutation-report-<module>.json` (mutations, killed, survived, score, result, every mutant). Used by `claude-mutation-testing.yml`; `claude-mutation-testing-gate.yml` publishes the `quality-gate/mutation-testing` status from the reports.
 - `qase-sync`: reconcile Qase test cases with the repo's tests.
 - `web-regression` (web): run the Qase Web test cases in Chrome through the Playwright MCP server and report a comparable result.
 - `jira`: search, create, update and link issues in the SCRUM Jira project.
