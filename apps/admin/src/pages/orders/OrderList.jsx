@@ -9,6 +9,7 @@ import {
 } from 'react-admin';
 import { Chip } from '@mui/material';
 import { OrderStatus, OrderStatusColors } from '../../constants/OrderStatus.jsx';
+import { ReviewStarsField } from './CustomerReview.jsx';
 
 const orderFilters = [
     <SelectInput
@@ -34,6 +35,7 @@ const OrderList = () => (
             <TextField source="receiverName" label="Receiver" />
             <NumberField source="totalPrice" label="Total" options={{ style: 'currency', currency: 'AMD' }} />
             <OrderStatusField source="status" label="Status" />
+            <ReviewStarsField source="review.stars" label="Rating" sortable={false} />
             <DateField source="createdAt" label="Created" showTime />
         </Datagrid>
     </List>

@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChefHat, Package, Truck, X } from "lucide-react";
 import { foodmeApi } from "@/api/foodme";
+import { OrderReviewSummary } from "@/components/sections/order-review";
 import { Button } from "@/components/ui/button";
 import { formatAmd } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
@@ -172,6 +173,20 @@ export default function Tracking() {
           )}
         </div>
       </div>
+
+      {data.review && (
+        <section
+          aria-labelledby="tracking-review-heading"
+          className="bezel-outer shadow-diffuse mt-5 animate-fade-up [animation-delay:90ms]"
+        >
+          <div className="bezel-inner px-5 py-4">
+            <h2 id="tracking-review-heading" className="mb-2 text-base font-bold text-zinc-900">
+              Your rating
+            </h2>
+            <OrderReviewSummary review={data.review} />
+          </div>
+        </section>
+      )}
 
       <div className="bezel-outer shadow-diffuse mt-5 animate-fade-up [animation-delay:120ms]">
         <div className="bezel-inner overflow-hidden">
