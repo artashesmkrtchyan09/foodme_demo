@@ -7,9 +7,14 @@ description: Mutation-test the code added or changed in a FoodMe pull request fo
 
 Measures whether the tests catch logic changes in the code a PR adds or changes. You break the code on purpose, one small change at a time, and see if the module's tests notice.
 
-Input: a **module** (`backend`, `web` or `admin`) and a **threshold** (percent, default 70). Output: `mutation-report-<module>.json` in the repository root.
+Input: a **module** (`backend`, `web` or `admin`), a **threshold** (percent, default 70) and a **time budget** (minutes, default 30). Output: `mutation-report-<module>.json` in the repository root.
 
 The skill is non-interactive. Never ask questions, commit, push or leave a mutation behind. If something is unclear, decide from the code and say what you assumed in a mutant's `description`.
+
+**How to work (CI only allows these):**
+- Apply and undo every mutation with the **Edit** tool (or `git checkout -- <file>` to revert). Do **not** use `sed`, `python`, shell scripts, helper files or temp directories: they are not permitted in CI and the run is blocked.
+- Run commands one at a time. The only shell tools available are `git`, `cd`, `curl`, `date`, `./gradlew`, `npm`, `npx playwright`, `npx tsc` and `npx eslint`.
+- Note the start time with `date +%s` and check it before each mutant. When the time budget is used up, stop mutating and write the report with the mutants finished so far (unfinished ones are left out, not counted).
 
 ## 1. Find the scope
 
@@ -26,18 +31,18 @@ If the module has no added or changed source lines, write the report with `"resu
 
 ## 2. Baseline
 
-Run the module's whole suite once before mutating anything.
+First build the **related test set**: the backend test classes, or the web/admin spec files, that exercise the changed files (grep the tests for the controller, service, page, component or route names). Run **only that set** once before mutating anything. Do not run the whole suite: it is too slow for CI.
 
 | Module | Command (run from the module dir) |
 |---|---|
-| backend | `./gradlew test` |
-| web, admin | `npx playwright test` (the backend is already running on `:8081`) |
+| backend | `./gradlew test --tests <class> [--tests <class> ...]` |
+| web, admin | `npx playwright test <spec files> --retries=0 --workers=4` (admin: `--workers=1`; the backend is already running on `:8081`) |
 
 Re-run each failing test once. Tests that still fail are **known failures** (this includes the seeded `FM-FLAKE-NN` tests): remember their names and ignore them when judging mutants. If the suite is red beyond that, for example it does not build or nothing runs, write the report with `"result": "ERROR"`, an `"error"` string and `"mutants": []`, then stop.
 
 ## 3. Choose mutants
 
-Pick **8 to 12**, spread across the changed files, riskiest logic first. Each mutant is one small edit to one place.
+Pick **6 to 8**, spread across the changed files, riskiest logic first. Each mutant is one small edit to one place.
 
 **Classic**
 - flip a relational or arithmetic operator (`>` to `>=`, `+` to `-`, `<` to `<=`)
@@ -60,11 +65,11 @@ Pick **8 to 12**, spread across the changed files, riskiest logic first. Each mu
 
 For every mutant, in order, one at a time:
 
-1. Apply the edit.
+1. Apply the edit with the Edit tool.
 2. Check it still builds: backend `./gradlew compileJava`, web `npx tsc -b`, admin `npx eslint <file>`. If it does not, set status `INVALID`, revert, and move on.
-3. Run only the **related tests**. Backend: `./gradlew test --tests <Controller or Service test class>`. Web and admin: `npx playwright test <spec files>` whose names match the area, for example the cart specs for a cart mutant. Use `--workers=1` for admin.
-4. A failing test that is **not** a known failure means a candidate kill. Re-run that test once. It must fail again: then status `KILLED`, with `killedBy` set to the first failing test name. A test that passes on the re-run is a flake: ignore it.
-5. If nothing failed, run the module's **full suite** once. If that finds a new failure, status `KILLED` (same re-run rule). If not, status `SURVIVED`.
+3. Run the **related test set** from the baseline, stopping at the first failure: backend add `--fail-fast`; web and admin add `--max-failures=1 --retries=0`.
+4. A failing test that is **not** a known failure is a candidate kill. Re-run just that test once. If it fails again: `KILLED`, with `killedBy` set to its name. If it passes the second time it was a flake: ignore it.
+5. If nothing failed, the mutant is `SURVIVED`. Do not run the full suite for survivors; choose the related test set generously in section 2 so a survivor really is untested.
 6. Revert: `git checkout -- <file>`. Confirm with `git diff --stat -- apps/` that nothing is left before the next mutant.
 
 A test run that exceeds its time limit counts as `KILLED` (`killedBy`: `"timeout"`).

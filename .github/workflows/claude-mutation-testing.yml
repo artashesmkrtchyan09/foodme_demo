@@ -53,7 +53,7 @@ jobs:
     needs: detect
     if: needs.detect.outputs.modules != '[]'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:
@@ -111,6 +111,10 @@ jobs:
       - name: Start backend
         if: matrix.module != 'backend'
         working-directory: apps/backend
+        env:
+          # Drop the demo's random 200-1500 ms API delay: it only slows the mutation runs.
+          FOODME_LATENCY_MIN_MS: "0"
+          FOODME_LATENCY_MAX_MS: "0"
         run: |
           nohup ./gradlew bootRun > "$RUNNER_TEMP/backend.log" 2>&1 &
           for i in $(seq 1 60); do
@@ -147,10 +151,10 @@ jobs:
         with:
           prompt: |
             Mutation-test the module ${{ matrix.module }} of PR ${{ github.repository }}/pull/${{ github.event.pull_request.number }}.
-            Use the mutation-test skill for module ${{ matrix.module }} with threshold ${{ vars.MUTATION_SCORE_THRESHOLD || '70' }}.
+            Use the mutation-test skill for module ${{ matrix.module }} with threshold ${{ vars.MUTATION_SCORE_THRESHOLD || '70' }} and a time budget of 30 minutes.
             Write mutation-report-${{ matrix.module }}.json to the repository root, exactly in the schema the skill defines, and list every mutant in it.
             Revert every mutation. Do not commit, push or comment on the PR.
-          claude_args: '--allowedTools "Read,Write,Edit,Grep,Glob,Bash(git:*),Bash(cd:*),Bash(curl:*),Bash(./gradlew:*),Bash(npm:*),Bash(npx playwright:*),Bash(npx tsc:*),Bash(npx eslint:*)"'
+          claude_args: '--allowedTools "Read,Write,Edit,Grep,Glob,Bash(git:*),Bash(cd:*),Bash(curl:*),Bash(date:*),Bash(./gradlew:*),Bash(npm:*),Bash(npx playwright:*),Bash(npx tsc:*),Bash(npx eslint:*)"'
           show_full_output: true
 
       - name: Upload mutation report
