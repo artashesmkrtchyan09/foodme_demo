@@ -90,10 +90,22 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # gradle-wrapper.jar is git-ignored (*.jar), so ./gradlew fails on a fresh
+      # checkout. Install the pinned Gradle version and regenerate the jar.
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
+          gradle-version: "8.6"
           build-root-directory: apps/backend
+
+      - name: Generate Gradle wrapper jar
+        working-directory: apps/backend
+        run: |
+          gradle wrapper --gradle-version 8.6
+          # keep the tracked wrapper files untouched; only the ignored jar is new
+          git checkout -- gradlew gradlew.bat gradle/wrapper/gradle-wrapper.properties
+          ./gradlew --version
+          git status --porcelain
 
       # The web and admin E2E suites run against the real backend.
       - name: Start backend
