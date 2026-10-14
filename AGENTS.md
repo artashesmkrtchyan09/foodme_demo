@@ -69,11 +69,14 @@ Current skills:
 - `backend-dev` (backend): implement a backend change bottom up, build it, run it against Postgres and check it through the API.
 - `backend-test` (backend): write, run and debug JUnit/MockMvc tests, including telling seeded flakes and bugs from real failures.
 - `fix-npm-deps` (web, admin): repair dependency installs.
+- `feature-qa`: orchestrates the feature QA workflow from a requirement to a PR (state, human gates, judge loops, verdict, HTML report in the git-ignored `qa-runs/<KEY>-<date>/`). Its steps are the skills `qa-requirements-review`, `qa-test-plan`, `qa-test-cases`, `qa-manual-execution`, `qa-bug-filing`, `qa-test-automation` and `qa-flake-check`, plus `ship-pr`. ISTQB checklists and artifact formats are in `.agents/skills/feature-qa/references/`. The project status line (`statusLine` in `.agents/settings.json` → `feature-qa/scripts/statusline.mjs`) shows the step the newest run is on.
 
 Current agents:
 - `web-regression-runner`: runs one `web-regression` run in a fresh context and returns its report. It never edits files.
+- `qa-test-case-judge` and `qa-automation-judge`: independent, read-only judges of a feature's Qase cases (format, coverage, relevance) and Playwright specs (correctness, flakiness). `feature-qa` uses them at steps 6 and 10.
 
 Current commands:
 - `/web-regression-goal [runs] [base-url]`: runs `web-regression` 10 times (by default), compares the results and improves the skill (`SKILL.md`, `case-notes.md`, `improvement-log.md`) until runs agree.
+- `/feature-qa <source> | continue [folder]`: runs the `feature-qa` workflow, or resumes it after a human gate. Step 11 dispatches `.github/workflows/e2e-flake-check.yml`, which runs chosen specs N times (10 by default) with retries off against a CI backend.
 
 `.claude` (and each `apps/<app>/.claude`) is a symlink to the matching `.agents` folder, and each `CLAUDE.md` is a symlink to `AGENTS.md`, so the same files serve Claude Code and other agents.
