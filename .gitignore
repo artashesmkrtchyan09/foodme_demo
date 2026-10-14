@@ -67,3 +67,6 @@ infra/docker-compose.local.yml
 .env.development
 .env.staging
 .env.production
+
+# --- Feature QA workflow runs (artifacts, evidence, index.html) -------------
+qa-runs/

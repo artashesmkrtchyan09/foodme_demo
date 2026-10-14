@@ -1,4 +1,9 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/skills/feature-qa/scripts/statusline.mjs\"",
+    "refreshInterval": 10
+  },
   "enabledMcpjsonServers": [
     "playwright",
     "qase",
