@@ -168,6 +168,23 @@ public class OrderService {
         return OrderDto.mapEntityToDto(order);
     }
 
+    @Transactional
+    public OrderDto cancelOrder(String number, String customerEmail) {
+        String email = customerEmail == null ? "" : customerEmail.trim().toLowerCase();
+        // Another customer's order gets the same 404 as a missing one, so order numbers can't be probed.
+        Order order = orderRepository.findWithLockByNumberAndCustomerEmail(number, email)
+                .orElseThrow(() -> new NotFoundException("Order " + number + " not found"));
+        if (!"NEW".equals(order.getStatus())) {
+            throw new BadRequestException("Only new orders can be cancelled.");
+        }
+        order.setStatus("CANCELLED");
+        Order saved = orderRepository.save(order);
+
+        meterRegistry.counter("foodme.orders.cancelled").increment();
+
+        return OrderDto.mapEntityToDto(saved);
+    }
+
     @Transactional(readOnly = true)
     public OrderListResponseDto listForCustomer(String customerEmail, int page, int size) {
         Customer customer = customerRepository.findByEmail(customerEmail == null ? "" : customerEmail.trim().toLowerCase())

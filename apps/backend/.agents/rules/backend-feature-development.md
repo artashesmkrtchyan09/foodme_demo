@@ -76,7 +76,7 @@ Work from the bottom up and keep each layer thin.
 
 These are duplicated across apps, so change them together:
 
-- **Order status flow:** `NEW → ACCEPTED | REJECTED`, then `ACCEPTED → DELIVERED | REJECTED`. It lives in `AdminOrderService.ALLOWED_TRANSITIONS`, `apps/admin/src/constants/OrderStatus.jsx` and the web status maps (`STATUS_LABEL` in `pages/Orders`, the map in `pages/Tracking`).
+- **Order status flow:** `NEW → ACCEPTED | REJECTED`, then `ACCEPTED → DELIVERED | REJECTED`. The customer can also move their own order `NEW → CANCELLED` (`OrderService.cancelOrder`, `POST /api/customer/orders/{number}/cancel`); `CANCELLED` is final and the admin can't change it. It lives in `AdminOrderService.ALLOWED_TRANSITIONS`, `apps/admin/src/constants/OrderStatus.jsx` and the web status maps (`STATUS_LABEL` in `pages/Orders`, the map in `pages/Tracking`).
 - **`ErrorResponseDto.message`:** the web `ApiRequestError` and the admin notifications show it as-is.
 - **Response shapes and `hy`/`am` language codes:** see *List responses* and *Translations*.
 

@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 @Service
 public class AdminOrderService {
 
+    // CANCELLED is set only by the customer (OrderService.cancelOrder) and is final.
     private static final Map<String, Set<String>> ALLOWED_TRANSITIONS = Map.of(
             "NEW", Set.of("ACCEPTED", "REJECTED"),
             "ACCEPTED", Set.of("DELIVERED", "REJECTED")
@@ -50,7 +51,11 @@ public class AdminOrderService {
 
     @Transactional
     public OrderDto updateStatus(Long id, String newStatus, String rejectReason) {
-        Order order = findEntity(id);
+        Order order = orderRepository.findWithLockById(id)
+                .orElseThrow(() -> new NotFoundException("Order " + id + " not found"));
+        if ("CANCELLED".equals(order.getStatus())) {
+            throw new BadRequestException("Order was cancelled by the customer and can't be changed.");
+        }
         Set<String> allowed = ALLOWED_TRANSITIONS.get(order.getStatus());
         if (allowed == null || !allowed.contains(newStatus)) {
             throw new BadRequestException("Cannot transition order from " + order.getStatus() + " to " + newStatus);

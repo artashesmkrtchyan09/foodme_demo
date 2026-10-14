@@ -1,7 +1,8 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChefHat, Package, Truck, X } from "lucide-react";
+import { Ban, Check, ChefHat, Package, Truck, X } from "lucide-react";
 import { foodmeApi } from "@/api/foodme";
+import { CancelOrderAction } from "@/components/sections/cancel-order-action";
 import { Button } from "@/components/ui/button";
 import { formatAmd } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
@@ -29,10 +30,17 @@ const STATUS_COPY: Record<string, { title: string; detail: string }> = {
     title: "Order declined",
     detail: "This order couldn’t be fulfilled. Contact support if you need help.",
   },
+  CANCELLED: {
+    title: "Cancelled",
+    detail: "You cancelled this order before the kitchen accepted it.",
+  },
 };
 
+// Final states that never went through the kitchen: no progress bar for them.
+const STOPPED_STATUSES = ["REJECTED", "CANCELLED"];
+
 function stepIndex(status: string): number {
-  if (status === "REJECTED") return -1;
+  if (STOPPED_STATUSES.includes(status)) return -1;
   const i = STEPS.findIndex((s) => s.key === status);
   return i >= 0 ? i : 0;
 }
@@ -85,7 +93,8 @@ export default function Tracking() {
     detail: "Current status for your order.",
   };
   const active = stepIndex(data.status);
-  const rejected = data.status === "REJECTED";
+  const stopped = STOPPED_STATUSES.includes(data.status);
+  const cancelled = data.status === "CANCELLED";
 
   return (
     <div className="tp_wrap mx-auto max-w-7xl px-4 py-10 md:px-8 md:py-14">
@@ -104,11 +113,17 @@ export default function Tracking() {
 
       <div className="bezel-outer shadow-diffuse mt-8 animate-fade-up [animation-delay:60ms]">
         <div className="bezel-inner p-5 md:p-6">
-          {rejected ? (
+          {stopped ? (
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600 ring-1 ring-red-100">
-                <X size={18} strokeWidth={2} />
-              </div>
+              {cancelled ? (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 ring-1 ring-zinc-200">
+                  <Ban size={18} strokeWidth={2} />
+                </div>
+              ) : (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600 ring-1 ring-red-100">
+                  <X size={18} strokeWidth={2} />
+                </div>
+              )}
               <div>
                 <p className="font-display text-lg font-bold text-zinc-900">{copy.title}</p>
                 <p className="mt-1 text-sm leading-relaxed text-zinc-500">{copy.detail}</p>
@@ -169,6 +184,13 @@ export default function Tracking() {
                 })}
               </ol>
             </>
+          )}
+          {isAuthenticated && (
+            <CancelOrderAction
+              number={data.number}
+              status={data.status}
+              className="mt-5 border-t border-zinc-100 pt-4"
+            />
           )}
         </div>
       </div>
