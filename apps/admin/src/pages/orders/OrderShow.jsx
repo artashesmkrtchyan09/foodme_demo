@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Show, useRecordContext, useRefresh, useNotify } from 'react-admin';
+import BlockIcon from '@mui/icons-material/Block';
 import {
+    Alert,
     Box,
     Paper,
     Typography,
@@ -42,8 +44,10 @@ const OrderDetails = () => {
             await updateOrderStatus(record.id, status, reason);
             notify('Order status updated', { type: 'success' });
             refresh();
-        } catch {
-            notify('Failed to update order status', { type: 'error' });
+        } catch (error) {
+            // e.g. the customer cancelled the order while it was open here
+            notify(error.response?.data?.message ?? 'Failed to update order status', { type: 'error' });
+            refresh();
         } finally {
             setLoading(false);
         }
@@ -81,6 +85,12 @@ const OrderDetails = () => {
                         color={OrderStatusColors[record.status] ?? 'default'}
                     />
                 </Stack>
+
+                {record.status === OrderStatus.CANCELLED && (
+                    <Alert severity="info" icon={<BlockIcon />} sx={{ mb: 2 }}>
+                        Cancelled by customer
+                    </Alert>
+                )}
 
                 <Grid container spacing={2} sx={{ mb: 2 }}>
                     <Grid item xs={6}>

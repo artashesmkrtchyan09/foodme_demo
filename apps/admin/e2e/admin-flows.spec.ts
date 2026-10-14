@@ -41,7 +41,17 @@ async function createOrderViaApi(request: import("@playwright/test").APIRequestC
     },
   });
   expect(createRes.ok()).toBeTruthy();
-  return createRes.json();
+  return { ...(await createRes.json()), customerToken: token as string };
+}
+
+async function cancelOrderViaApi(
+  request: import("@playwright/test").APIRequestContext,
+  order: { number: string; customerToken: string },
+) {
+  const res = await request.post(`${API}/api/customer/orders/${order.number}/cancel`, {
+    headers: { Authorization: `Bearer ${order.customerToken}` },
+  });
+  expect(res.ok()).toBeTruthy();
 }
 
 test.describe("Admin auth", () => {
@@ -105,6 +115,64 @@ test.describe("Admin resources", () => {
     await expect(page.locator("table tbody tr").first()).toBeVisible({ timeout: 15000 });
     await page.locator("table tbody tr").first().click();
     await expect(page).toHaveURL(/#\/dishes\/\d+/);
+  });
+
+  test("status filter shows customer-cancelled orders", async ({ page, request }) => {
+    const order = await createOrderViaApi(request);
+    await cancelOrderViaApi(request, order);
+
+    await page.goto("/#/orders");
+    await page.getByLabel("Status").click();
+    await page.getByRole("option", { name: "CANCELLED" }).click();
+    await expect(page).toHaveURL(/CANCELLED/);
+
+    const row = page.getByRole("row").filter({ hasText: order.number });
+    await expect(row).toBeVisible({ timeout: 15000 });
+    await expect(row.getByText("CANCELLED", { exact: true })).toBeVisible();
+    await expect(page.getByRole("cell").getByText("NEW", { exact: true })).toHaveCount(0);
+  });
+
+  test("cancelled order shows the customer note and no status actions", async ({ page, request }) => {
+    const order = await createOrderViaApi(request);
+    await cancelOrderViaApi(request, order);
+
+    await page.goto("/#/orders");
+    await page.getByRole("button", { name: "Refresh" }).click();
+    await page.getByText(order.number).click();
+    await expect(page).toHaveURL(/#\/orders\/\d+\/show/);
+
+    await expect(page.getByRole("heading", { name: `Order ${order.number}`, level: 5 })).toBeVisible();
+    await expect(page.getByText("Cancelled by customer")).toBeVisible();
+    await expect(page.getByText("CANCELLED", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Mark as / })).toHaveCount(0);
+  });
+
+  test("dashboard revenue leaves out cancelled and declined orders", async ({ page, request }) => {
+    const order = await createOrderViaApi(request);
+    await cancelOrderViaApi(request, order);
+
+    // loginAsAdmin already loaded the dashboard before this order existed; refresh
+    // it, and compute the expected sum from the exact orders the dashboard received
+    // (its 100 most recent), so orders other tests create meanwhile don't matter.
+    await page.goto("/#/");
+    const recentResponse = page.waitForResponse(
+      (r) => r.url().includes("/admin/order?") && r.url().includes("size=100") && r.ok(),
+    );
+    await page.getByRole("button", { name: "Refresh" }).click();
+    const orders: { number: string; status: string; totalPrice: number }[] = (
+      await (await recentResponse).json()
+    ).list;
+    expect(orders).toContainEqual(expect.objectContaining({ number: order.number, status: "CANCELLED" }));
+    const expected = orders
+      .filter((o) => o.status !== "CANCELLED" && o.status !== "REJECTED")
+      .reduce((sum, o) => sum + (o.totalPrice ?? 0), 0);
+    const formatted = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "AMD",
+      maximumFractionDigits: 0,
+    }).format(expected);
+
+    await expect(page.getByTestId("recent-revenue")).toContainText(formatted, { timeout: 15000 });
   });
 
   test("sidebar navigates between resources", async ({ page }) => {
