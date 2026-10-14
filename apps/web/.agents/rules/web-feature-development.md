@@ -68,7 +68,7 @@ foodmeApi (api/foodme.ts) → apiClient (api/client.ts) → fetch(API_BASE_URL +
 ## Shared with the backend and admin
 
 - Response shapes come from backend DTOs. Storefront lists are named arrays plus `count` (`exploreChefResponseDtoList`, `dishDtoList`), and customer orders are `{ list, count }`. Renaming a field doesn't fail at compile time, so update `src/types` in the same change.
-- The order status maps (`STATUS_LABEL` in `pages/Orders`, the map in `pages/Tracking`) must cover every backend status: `NEW`, `ACCEPTED`, `DELIVERED`, `REJECTED`. See the backend rule for the full flow.
+- The order status maps (`STATUS_LABEL` in `pages/Orders`, the map in `pages/Tracking`) must cover every backend status: `NEW`, `ACCEPTED`, `DELIVERED`, `REJECTED`, `CANCELLED`. See the backend rule for the full flow.
 
 ## Don't
 
