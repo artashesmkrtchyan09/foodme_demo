@@ -43,6 +43,7 @@ class OrderStatusCancelControllerTest {
     @Autowired
     private MeterRegistry meterRegistry;
 
+    // qase: 124
     @Test
     void cancel_ownNewOrder_returnsCancelled() throws Exception {
         String token = customerToken();
@@ -69,6 +70,7 @@ class OrderStatusCancelControllerTest {
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
     }
 
+    // qase: 134
     @Test
     void cancel_ownNewOrder_incrementsCancelledOrdersCounter() throws Exception {
         String token = customerToken();
@@ -80,6 +82,21 @@ class OrderStatusCancelControllerTest {
         assertThat(meterRegistry.counter("foodme.orders.cancelled").count()).isEqualTo(before + 1);
     }
 
+    // qase: 135
+    @Test
+    void cancel_refusedCancel_doesNotIncrementCancelledOrdersCounter() throws Exception {
+        String token = customerToken();
+        String number = placeOrder(token);
+        cancel(number, token);
+        double before = meterRegistry.counter("foodme.orders.cancelled").count();
+
+        mockMvc.perform(post(cancelPath(number)).header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+
+        assertThat(meterRegistry.counter("foodme.orders.cancelled").count()).isEqualTo(before);
+    }
+
+    // qase: 125
     @Test
     void cancel_acceptedOrder_rejectedWithBadRequest() throws Exception {
         String token = customerToken();
@@ -93,6 +110,7 @@ class OrderStatusCancelControllerTest {
                 .andExpect(jsonPath("$.status").value("ACCEPTED"));
     }
 
+    // qase: 126
     @Test
     void cancel_rejectedOrder_rejectedWithBadRequest() throws Exception {
         String token = customerToken();
@@ -107,8 +125,27 @@ class OrderStatusCancelControllerTest {
         mockMvc.perform(post(cancelPath(number)).header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(ONLY_NEW_MESSAGE));
+        mockMvc.perform(get("/api/order/number/" + number))
+                .andExpect(jsonPath("$.status").value("REJECTED"));
     }
 
+    // qase: 127
+    @Test
+    void cancel_deliveredOrder_rejectedWithBadRequest() throws Exception {
+        String token = customerToken();
+        String number = placeOrder(token);
+        Long id = orderId(number);
+        adminSetStatus(id, "ACCEPTED");
+        adminSetStatus(id, "DELIVERED");
+
+        mockMvc.perform(post(cancelPath(number)).header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(ONLY_NEW_MESSAGE));
+        mockMvc.perform(get("/api/order/number/" + number))
+                .andExpect(jsonPath("$.status").value("DELIVERED"));
+    }
+
+    // qase: 128
     @Test
     void cancel_alreadyCancelledOrder_rejectedWithBadRequest() throws Exception {
         String token = customerToken();
@@ -120,6 +157,7 @@ class OrderStatusCancelControllerTest {
                 .andExpect(jsonPath("$.message").value(ONLY_NEW_MESSAGE));
     }
 
+    // qase: 129
     @Test
     void cancel_otherCustomersOrder_notFoundAndOrderUnchanged() throws Exception {
         String number = placeOrder(customerToken());
@@ -131,6 +169,7 @@ class OrderStatusCancelControllerTest {
                 .andExpect(jsonPath("$.status").value("NEW"));
     }
 
+    // qase: 130
     @Test
     void cancel_unknownOrder_notFound() throws Exception {
         String number = "FM-NOPE-" + UUID.randomUUID();
@@ -140,6 +179,7 @@ class OrderStatusCancelControllerTest {
                 .andExpect(jsonPath("$.message").value("Order " + number + " not found"));
     }
 
+    // qase: 131
     @Test
     void cancel_withoutToken_unauthorized() throws Exception {
         String number = placeOrder(customerToken());
@@ -150,14 +190,18 @@ class OrderStatusCancelControllerTest {
                 .andExpect(jsonPath("$.status").value("NEW"));
     }
 
+    // qase: 132
     @Test
     void cancel_withAdminToken_forbidden() throws Exception {
         String number = placeOrder(customerToken());
 
         mockMvc.perform(post(cancelPath(number)).header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/order/number/" + number))
+                .andExpect(jsonPath("$.status").value("NEW"));
     }
 
+    // qase: 133
     @ParameterizedTest
     @ValueSource(strings = {"NEW", "ACCEPTED", "DELIVERED", "REJECTED"})
     void adminUpdateStatus_cancelledOrder_rejected(String targetStatus) throws Exception {

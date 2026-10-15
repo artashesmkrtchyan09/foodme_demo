@@ -120,6 +120,9 @@ jobs:
         working-directory: apps/${{ inputs.app }}
         env:
           CI: "true"
+          # This job starts its own Postgres and backend, so specs that need a backend
+          # no other suite writes to (admin revenue-window.spec.ts) may run here.
+          E2E_ISOLATED_BACKEND: "true"
           SPECS: ${{ inputs.specs }}
           REPEAT: ${{ inputs.repeat }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: results.json
